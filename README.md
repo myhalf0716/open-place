@@ -1,1 +1,1 @@
-# open-place
+# open-places
