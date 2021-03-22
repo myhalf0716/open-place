@@ -21,10 +21,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Component
 public class JwtUtil {
-    @Value("${spring.jwt.secret}")
+    @Value("${spring.security.jwt.secret}")
     private String secretKey;
 
-    @Value("${spring.jwt.expiration-msec}")
+    @Value("${spring.security.jwt.expiration-msec}")
     private long tokenExpirationMSec;   //1000L * 60 * 60 * 24 : 24시간 토큰 유효
 
     private final UserDetailsService userDetailsService;

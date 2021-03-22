@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping(value = "/place")
 public class PlaceController {
     @Autowired
-    private PlaceService placeService;
+    private PlaceService naverPlaceService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE,
             consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -36,7 +36,7 @@ public class PlaceController {
     public ResponseEntity<List<Place>> join(@RequestParam String keyword) {
 
         final HttpHeaders headers = new HttpHeaders();
-        return new ResponseEntity<List<Place>>(placeService.search(keyword), headers,
+        return new ResponseEntity<List<Place>>(naverPlaceService.search(keyword), headers,
                 HttpStatus.OK);
     }
 

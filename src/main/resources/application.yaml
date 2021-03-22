@@ -1,3 +1,4 @@
+debug: true
 spring:
   h2:
     console:
@@ -21,5 +22,5 @@ spring:
       ddl-auto: update
   security:
     jwt:
-      secret: ${'spring.jwt.secret':myhalf0716}
-      expiration-msec: ${'spring.jwt.expiration-msec':86400000}
+      secret: ${'spring.security.jwt.secret':myhalf0716}
+      expiration-msec: ${'spring.security.jwt.expiration-msec':86400000}
