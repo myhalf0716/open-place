@@ -1,5 +1,7 @@
 package kr.ggang.openplaces.exception;
 
+import java.io.IOException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpStatusCodeException;
 
@@ -17,5 +19,4 @@ public class ServiceException extends HttpStatusCodeException {
     public ServiceException(HttpStatus statusCode) {
         super(statusCode);
     }
-
 }

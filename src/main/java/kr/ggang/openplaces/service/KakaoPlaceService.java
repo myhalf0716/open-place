@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -17,46 +16,31 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import kr.ggang.openplaces.dao.entity.SearchHistory;
 import kr.ggang.openplaces.exception.ServiceException;
 import kr.ggang.openplaces.model.EnumApiProvider;
-import kr.ggang.openplaces.model.NaverPlaceResponse;
+import kr.ggang.openplaces.model.KakaoPlaceResponse;
 import kr.ggang.openplaces.model.Place;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Client ID : cHpcZ7xP_InAHp6pxHxI ("${openapi.naver.client.id}")
- * Client Secret :4_6CiyF0Qg ("${openapi.naver.client.secret}")
- * 
+ * KakaoAK : a4b8cab008561bfc33ec2b072c8ea1ea
  * @author seunghagkang
  *
  */
 @Slf4j
-@Service(value = "naverPlaceService")
-public class NaverPlaceService implements PlaceService {
-    private static final String NAVER_API_ENDPOINT = "https://openapi.naver.com";
+@Service(value = "kakaoPlaceService")
+public class KakaoPlaceService implements PlaceService {
+    private static final String KAKAO_API_ENDPOINT = "https://dapi.kakao.com";
     
-    @Value("${openapi.naver.client.id}")
-    private String clientId;
+    @Value("${openapi.kakao.admin.key}")
+    private String adminKey;
     
-    @Value("${openapi.naver.client.secret}")
-    private String clientSecret;
-    
-    @Autowired
-    private RestTemplate restTemplate;
-
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -66,16 +50,15 @@ public class NaverPlaceService implements PlaceService {
         List<Place> placeList = null;
         String error = null;
         try {
-            String apiUrl = NAVER_API_ENDPOINT.concat("/v1/search/local.json");
+            String apiUrl = KAKAO_API_ENDPOINT.concat("/v2/local/search/keyword.json");
             String query = "?query="
                     .concat(URLEncoder.encode(keyword, "UTF-8"))
-                    .concat("&sort=random&page=1&size=10");
+                    .concat("&size=10");
 //                    .concat("&sort=random");
             URL url = new URL(apiUrl + query);
             con = (HttpURLConnection) url.openConnection(); 
             con.setRequestMethod("GET"); 
-            con.setRequestProperty("X-Naver-Client-Id", clientId); 
-            con.setRequestProperty("X-Naver-Client-Secret", clientSecret);
+            con.setRequestProperty("Authorization", "KakaoAK ".concat(adminKey)); 
             
         } catch( MalformedURLException e ) {
             log.error("fail to new URL", e);
@@ -96,13 +79,14 @@ public class NaverPlaceService implements PlaceService {
         
         if( responseCode == HttpURLConnection.HTTP_OK ) {
             try {
-                placeList = readNaverPlace(con.getInputStream());
+                placeList = readKakaoPlace(con.getInputStream());
             } catch (IOException e) {
                 throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fail to con.getInputStream");
             }
         }
         else {
             error = readError(con.getErrorStream());
+            log.error("readKakaoPlace Error[{}]{}]", responseCode, error);
             throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, error);
         }
 
@@ -110,93 +94,64 @@ public class NaverPlaceService implements PlaceService {
     }
 
     private String readError(InputStream errorStream) {
-        // TODO Auto-generated method stub
-        return null;
+        InputStreamReader streamReader = new InputStreamReader(errorStream); 
+        String result = null;
+        try (BufferedReader lineReader = new BufferedReader(streamReader)) { 
+            StringBuilder responseBody = new StringBuilder(); 
+            String line; 
+            while ((line = lineReader.readLine()) != null) { 
+                log.debug("readError line [{}]", line);
+                responseBody.append(line); 
+            } 
+            result = responseBody.toString(); 
+            log.debug("readError resJson [{}]", result);
+        } catch (IOException e) { 
+            log.error(e.getMessage(), e);
+            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "API 응답을 읽는데 실패했습니다."); 
+        }
+        
+        return result;
     }
 
-    private List<Place> readNaverPlace(InputStream inputStream) {
+    private List<Place> readKakaoPlace(InputStream inputStream) {
         InputStreamReader streamReader = new InputStreamReader(inputStream); 
         String resJson = null;
         try (BufferedReader lineReader = new BufferedReader(streamReader)) { 
             StringBuilder responseBody = new StringBuilder(); 
             String line; 
             while ((line = lineReader.readLine()) != null) { 
-                log.debug("readNaverPlace line [{}]", line);
+                log.debug("readKakaoPlace line [{}]", line);
                 responseBody.append(line); 
             } 
             resJson = responseBody.toString(); 
-            log.debug("readNaverPlace resJson [{}]", resJson);
+            log.debug("readKakaoPlace resJson [{}]", resJson);
         } catch (IOException e) { 
             log.error(e.getMessage(), e);
             throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "API 응답을 읽는데 실패했습니다."); 
         }
 
-        NaverPlaceResponse naverPlace = null;
+        KakaoPlaceResponse kakaoPlace = null;
         try {
-            naverPlace = objectMapper.readValue(resJson, NaverPlaceResponse.class);
+            kakaoPlace = objectMapper.readValue(resJson, KakaoPlaceResponse.class);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, "fail to objectMapper.readValue");
         }
         
-        if( naverPlace.getTotal() == 0 ) {
+        if( kakaoPlace.getMeta().getTotalCount() == 0 ) {
             return new ArrayList<>();
         }
         
-        List<Place> result = Arrays.asList(naverPlace.getItems()).stream()
+        log.debug("documens length [{}]", kakaoPlace.getDocuments().length);
+        List<Place> result = Arrays.asList(kakaoPlace.getDocuments()).stream()
             .map(item->{
-                Place place = new Place(item.getTitle(), EnumApiProvider.NAVER);
+                Place place = new Place(item.getPlaceName(), EnumApiProvider.KAKAO);
                 return place; })
             .collect(Collectors.toList())
             ;
-
-        return result;
-    }
-
-//    @Override
-    public List<Place> searchEx(String keyword) {
-        String apiUrl = "/v1/search/local.json";
-        URI uri = null;
-        try {
-            uri = UriComponentsBuilder.fromHttpUrl(NAVER_API_ENDPOINT.concat(apiUrl))
-                .queryParam("query", URLEncoder.encode(keyword, "UTF-8"))
-                .queryParam("sort", "random")
-                .queryParam("page", 1)
-                .queryParam("size", 10)
-                .build().toUri();
-        } catch (UnsupportedEncodingException e) {
-            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        for( Place place : result ) {
+            log.debug("Place [{}]", place);
         }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setAccept(Arrays.asList(new MediaType[] {MediaType.APPLICATION_JSON}));
-        
-        headers.put("X-Naver-Client-Id", Arrays.asList(new String[] {clientId}) );
-        headers.put("X-Naver-Client-Secret", Arrays.asList(new String[] {clientSecret}) );
-
-        HttpEntity<?> entity = new HttpEntity<>(headers);
-
-        NaverPlaceResponse naverPlace = null;
-        try {
-            ResponseEntity<NaverPlaceResponse> responseEntity = restTemplate.exchange(uri, HttpMethod.GET, entity, NaverPlaceResponse.class);
-            naverPlace = responseEntity.getBody();
-            log.debug("naverPlace [{}]", naverPlace);
-            
-        } catch(Exception e) {
-            log.error("fail to restTemplate.exchange====================================\n"
-                    + "HEADER [{}] KEYWORD [{}]", headers, keyword, e);
-            throw new ServiceException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
-        
-        if( naverPlace.getTotal() == 0 ) {
-            return new ArrayList<>();
-        }
-        
-        List<Place> result = Arrays.asList(naverPlace.getItems()).stream()
-            .map(NaverPlaceResponse.Item::getTitle).map(Place::new)
-            .collect(Collectors.toList())
-            ;
 
         return result;
     }
@@ -212,5 +167,4 @@ public class NaverPlaceService implements PlaceService {
         // TODO Auto-generated method stub
         return null;
     }
-
 }

@@ -1,7 +1,5 @@
 package kr.ggang.openplaces.model;
 
-import java.time.OffsetDateTime;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -28,8 +26,9 @@ public class NaverPlaceResponse {
     @ToString
     public static class Item {
         private String title;
-        private String category;
         private String link;
+        private String category;
+        private String description;
         private String telephone;
         private String address;
         private String roadAddress;
@@ -56,7 +55,8 @@ public class NaverPlaceResponse {
         private String title;
         private String link;
         private String description;
-        private OffsetDateTime lastBuildDate;
+//        @JsonIgnore
+//        private OffsetDateTime lastBuildDate;
         private Integer total;
         private Integer start;
         private Integer display;
@@ -69,5 +69,9 @@ public class NaverPlaceResponse {
         private Channel channel;
     }
     
-    private RSS rss;
+    private String lastBuildDate;
+    private Integer total;
+    private Integer start;
+    private Integer display;
+    private Item[] items;
 }

@@ -1,5 +1,7 @@
 package kr.ggang.openplaces.security;
 
+import javax.transaction.Transactional;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
@@ -13,7 +15,10 @@ import lombok.RequiredArgsConstructor;
 public class UserDetailsServiceImpl implements UserDetailsService {
     private final MemberRepository memberRepository;
 
+    @Transactional
     public UserDetails loadUserByUsername(String userPk) {
-        return memberRepository.findById(Long.valueOf(userPk)).orElseThrow(MemberNotFoundException::new);
+        UserDetails ud = memberRepository.findById(Long.valueOf(userPk)).orElseThrow(MemberNotFoundException::new);
+        ud.getAuthorities();
+        return ud;
     }
 }

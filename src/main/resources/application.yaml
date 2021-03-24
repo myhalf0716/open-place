@@ -24,3 +24,11 @@ spring:
     jwt:
       secret: ${'spring.security.jwt.secret':myhalf0716}
       expiration-msec: ${'spring.security.jwt.expiration-msec':86400000}
+server:
+  port: ${'server.port':8080}
+#  address: ${'server.address':127.0.0.1}
+
+logging:
+  level:
+    root: debug
+    

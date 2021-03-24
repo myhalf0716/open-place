@@ -11,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 @ControllerAdvice
@@ -40,5 +41,13 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         response.getWriter().write("URL not supported");
+    }
+    @ExceptionHandler (value = {UnsupportedMediaTypeStatusException.class})
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+            UnsupportedMediaTypeStatusException exception) throws IOException {
+        // 404
+        response.setContentType("application/json");
+        response.setStatus(HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE);
+        response.getWriter().write("Unsupported Media Type");
     }
 }
