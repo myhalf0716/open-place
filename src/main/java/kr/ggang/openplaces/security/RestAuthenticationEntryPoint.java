@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import kr.ggang.openplaces.exception.MemberNotFoundException;
+
 @ControllerAdvice
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
@@ -34,6 +36,14 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.getWriter().write("FORBIDDEN : " + accessDeniedException.getMessage());
     }
 
+    @ExceptionHandler (value = {MemberNotFoundException.class})
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+            MemberNotFoundException exception) throws IOException {
+        // 404
+        response.setContentType("application/json");
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        response.getWriter().write("invalid api token");
+    }
     @ExceptionHandler (value = {NoHandlerFoundException.class})
     public void commence(HttpServletRequest request, HttpServletResponse response,
             NoHandlerFoundException exception) throws IOException {

@@ -1,5 +1,6 @@
 package kr.ggang.openplaces.service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,7 @@ public class AccountServiceImpl implements AccountService {
             .name(joinReq.getName())
             .email(joinReq.getEmail())
             .password(passwordEncoder.encode(joinReq.getPassword()))
+            .createdAt(LocalDateTime.now())
             .roles(Collections.singletonList("ROLE_MEMBER"))
             .build();
         } catch(Exception e) {
